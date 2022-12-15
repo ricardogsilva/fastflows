@@ -75,16 +75,25 @@ def check_provider_health_task():
         provider.healthcheck()
 
 
+def initialize_fastflows():
+    # FIXME: relying on the app having been defined on the closure seems hacky
+    app.state.FLOW_CATALOG = catalog.FlowCatalog(
+        settings.FLOWS_HOME, settings.FLOWS_STORAGE_TYPE
+    )
+
+
 def register_flows_task():
     if settings.AUTO_DEPLOYMENT:
+        # FIXME: relying on the app having been defined on the closure seems hacky
+        flow_catalog: catalog.FlowCatalog = app.state.FLOW_CATALOG
         logger.info(f"Register Flows in {provider.type.capitalize()} provider")
         try:
-            catalog.FlowCatalog().register_and_deploy()
+            flow_catalog.register_and_deploy()
         except FastFlowsError:
             # error during connection to DB, maybe problem at the prefect start
             # let's wait & try one more time
             sleep(10)
-            catalog.FlowCatalog().register_and_deploy()
+            flow_catalog.register_and_deploy()
 
 
 app = fastapi.FastAPI(
@@ -92,7 +101,13 @@ app = fastapi.FastAPI(
     root_path=settings.ROOT_PATH,
     debug=settings.DEBUG,
     middleware=_middleware,
-    on_startup=[check_provider_health_task, register_flows_task],
+    # TODO: it seems that using a lifespan async context, as described in
+    #
+    # https://www.starlette.io/events/
+    #
+    # may be a cleaner alternative than providing startup/shutdown handlers, since these
+    # are not passed the app
+    on_startup=[initialize_fastflows, check_provider_health_task, register_flows_task],
     exception_handlers={
         StarletteHTTPException: custom_http_exception_handler,
         RequestValidationError: custom_validation_exception_handler,

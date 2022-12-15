@@ -292,8 +292,4 @@ class FlowCatalog:
         return deployment_response
 
     def list_flows(self) -> typing.List[str]:
-        return list(catalog.items())
-
-
-catalog = FlowCatalog.catalog
-catalog_by_id = FlowCatalog.catalog_by_id
+        return list(self.catalog.items())
