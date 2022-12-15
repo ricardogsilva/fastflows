@@ -24,42 +24,30 @@ from ..deployment import (
     get_last_deployments_per_flow,
     create_flow_deployment,
 )
-from ..utils.singleton import Singleton
 from .cache import CatalogCache
 from .reader import FlowFileReader
 from .storage import LocalStorage
 
 
-class Catalog(metaclass=Singleton):
-    """main class to register all flows"""
+class FlowCatalog:
 
-    # because class is singleton - always will be one instance
-    catalog: typing.Dict[str, Flow] = {}
-    catalog_by_id: typing.Dict[str, Flow] = {}
-
-    storages = {
-        # add here API to work with flows on S3, or any other store
-        FastFlowsFlowStorageType.LOCAL: LocalStorage,
-    }
+    catalog: typing.Dict[str, Flow]
+    catalog_by_id: typing.Dict[str, Flow]
 
     def __init__(
         self,
-        flows_home_path: Path = settings.FLOWS_HOME,
-        storage_type: str = settings.FLOWS_STORAGE_TYPE,
-    ) -> None:
+        flows_home_path: Path,
+        storage_type: FastFlowsFlowStorageType,
+    ):
+        self.catalog = {}
+        self.catalog_by_id = {}
 
         self.flows_home_path = flows_home_path
-        self.storage_type = storage_type
         self.cache = CatalogCache()
         self.get_catalog_from_cache()
 
-    def _get_storage(self):
-        storage = self.storages.get(self.storage_type)
-        if storage is None:
-            raise Exception(
-                f"Flows storage type is not supported. Must be one of: {self.storages}"
-            )
-        return storage(self.flows_home_path)
+        storage_factory = {FastFlowsFlowStorageType.LOCAL: LocalStorage}[storage_type]
+        self.storage = storage_factory(str(flows_home_path))
 
     def get_flow_data(self, flow_file_path: str) -> str:
         with open(flow_file_path) as f:
@@ -110,14 +98,12 @@ class Catalog(metaclass=Singleton):
         self, flow_input: FlowDeployInput
     ) -> typing.List[FlowDataFromFile]:
         if flow_input.file_path:
-            flows_in_folder = self._flow_path_processing(flow_input.file_path)
-
+            existing_flows = self._flow_path_processing(flow_input.file_path)
         elif flow_input.flow_data:
-            flows_in_folder = self._blob_data_processing(flow_input.flow_data)
+            existing_flows = self._blob_data_processing(flow_input.flow_data)
         else:
-            flows_in_folder = self.process_flows_folder()
-
-        return flows_in_folder
+            existing_flows = list(self.storage.list())
+        return existing_flows
 
     def _filter_flows_by_name(
         self,
@@ -305,28 +291,9 @@ class Catalog(metaclass=Singleton):
         deployment_response = create_flow_deployment(flow)
         return deployment_response
 
-    def _get_full_flow_location(self, flow_file_name: str) -> str:
-        return Path(self.flows_home_path) / flow_file_name
-
-    def process_flows_folder(self) -> typing.List[FlowDataFromFile]:
-        """list flows from FLOWS_HOME without register them or load them to Prefect if 'register' True"""
-        flows_in_storage = self._get_storage().list()
-
-        flows_in_folder = []
-
-        for file_name in flows_in_storage:
-            if not file_name.endswith(".py"):
-                continue
-            full_flow_path = self._get_full_flow_location(file_name)
-
-            # get data from flow file
-            flow_file = FlowFileReader(full_flow_path)
-            flows_in_folder += flow_file.flows
-        return flows_in_folder
-
     def list_flows(self) -> typing.List[str]:
         return list(catalog.items())
 
 
-catalog = Catalog.catalog
-catalog_by_id = Catalog.catalog_by_id
+catalog = FlowCatalog.catalog
+catalog_by_id = FlowCatalog.catalog_by_id

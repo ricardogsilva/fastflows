@@ -79,12 +79,12 @@ def register_flows_task():
     if settings.AUTO_DEPLOYMENT:
         logger.info(f"Register Flows in {provider.type.capitalize()} provider")
         try:
-            catalog.Catalog().register_and_deploy()
+            catalog.FlowCatalog().register_and_deploy()
         except FastFlowsError:
             # error during connection to DB, maybe problem at the prefect start
             # let's wait & try one more time
             sleep(10)
-            catalog.Catalog().register_and_deploy()
+            catalog.FlowCatalog().register_and_deploy()
 
 
 app = fastapi.FastAPI(

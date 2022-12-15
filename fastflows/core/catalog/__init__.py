@@ -1,3 +1,3 @@
-from fastflows.core.catalog.catalog import Catalog
+from fastflows.core.catalog.catalog import FlowCatalog
 
-__all__ = ["Catalog"]
+__all__ = ["FlowCatalog"]

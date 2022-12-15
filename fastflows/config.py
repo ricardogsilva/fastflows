@@ -92,7 +92,7 @@ class FastFlowsSettings(pydantic.BaseSettings):
     AWS_LAMBDA_DEPLOY: bool = False
     CATALOG_CACHE: str = "./flows/.fastflows"
     DEBUG: bool = True
-    FLOWS_HOME: Path = Path("flows/")
+    FLOWS_HOME: str = "flows/"
     FLOWS_STORAGE_TYPE: FastFlowsFlowStorageType = FastFlowsFlowStorageType.LOCAL
     PREFECT: _PrefectSettings = _PrefectSettings()
     PROVIDER_PREPARE_AT_THE_START: bool = True

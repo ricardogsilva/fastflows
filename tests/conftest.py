@@ -1,10 +1,10 @@
 import pathlib
 import pytest
-from fastflows.core.catalog import Catalog
+from fastflows.core.catalog import FlowCatalog
 
 flows_home_path = pathlib.Path("tests/test_data/flows")
 
-Catalog().set_flows_path(flows_home_path)
+FlowCatalog().set_flows_path(flows_home_path)
 
 
 def pytest_configure(config):

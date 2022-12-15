@@ -42,9 +42,10 @@ async def init_flow_run_by_name(
     return flow_ops.run_flow(flow_name, by_id=False, flow_run_input=input_)
 
 
-@router.get("")
+@router.get("", summary="List registered flows")
 @handle_rest_errors
 async def list_all_registered_flows_in_fast_flows():
+    """Return flows that are known to fastflows"""
     return flow_ops.list_flows()
 
 

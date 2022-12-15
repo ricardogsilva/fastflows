@@ -33,7 +33,7 @@ def get_flow_by_name(flow_name: str) -> flow_schemas.Flow:
 
 def register_flow_and_check(flow_id: str, catalog_: dict) -> flow_schemas.Flow:
     # try to register flows, maybe they were updated during runtime
-    catalog_module.Catalog().register_and_deploy()
+    catalog_module.FlowCatalog().register_and_deploy()
     flow = catalog_.get(flow_id)
     if not flow:
         raise errors.FlowNotFoundError(
@@ -76,13 +76,13 @@ def list_flows(
     flows_home_path: typing.Optional[Path] = settings.FLOWS_HOME,
 ) -> typing.List[str]:
     # they cannot be registered in Prefect, just list from FLOWS_HOME
-    catalog_module.Catalog(flows_home_path=flows_home_path).register_and_deploy()
+    catalog_module.FlowCatalog(flows_home_path=flows_home_path).register_and_deploy()
     return list(catalog_module.catalog.keys())
 
 
 def deploy_flows(
     flow_input: flow_schemas.FlowDeployInput,
 ) -> typing.List[flow_schemas.Flow]:
-    return catalog_module.Catalog(
+    return catalog_module.FlowCatalog(
         flows_home_path=flow_input.flows_home_path
     ).register_and_deploy(flow_input)
